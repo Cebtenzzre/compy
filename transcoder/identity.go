@@ -10,3 +10,5 @@ type Identity struct{}
 func (i *Identity) Transcode(w *proxy.ResponseWriter, r *proxy.ResponseReader, headers http.Header) error {
 	return w.ReadFrom(r)
 }
+
+func (i *Identity) TranscodeHead(w *proxy.ResponseWriter, r *proxy.ResponseReader, headers http.Header) {}

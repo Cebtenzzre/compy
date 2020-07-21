@@ -29,6 +29,7 @@ type Proxy struct {
 
 type Transcoder interface {
 	Transcode(*ResponseWriter, *ResponseReader, http.Header) error
+	TranscodeHead(*ResponseWriter, *ResponseReader, http.Header)
 }
 
 func New(host string, cert string) *Proxy {
@@ -61,7 +62,7 @@ func (p *Proxy) EnableMitm(ca, key string) error {
 		if !ok {
 			return errors.New("failed to parse root certificate")
 		}
-		config = &tls.Config{RootCAs: roots}
+		config = &tls.Config{RootCAs: roots, InsecureSkipVerify: true}
 	}
 
 	p.ml = newMitmListener(cf, config)
@@ -140,7 +141,7 @@ func (p *Proxy) handle(w http.ResponseWriter, r *http.Request) error {
 	defer resp.Body.Close()
 	rw := newResponseWriter(w)
 	rr := newResponseReader(resp)
-	err = p.proxyResponse(rw, rr, r.Header)
+	err = p.proxyResponse(rw, rr, r)
 	read := rr.counter.Count()
 	written := rw.rw.Count()
 	log.Printf("transcoded: %d -> %d (%3.1f%%)", read, written, float64(written)/float64(read)*100)
@@ -197,14 +198,18 @@ func forward(r *http.Request) (*http.Response, error) {
 	return http.DefaultTransport.RoundTrip(r)
 }
 
-func (p *Proxy) proxyResponse(w *ResponseWriter, r *ResponseReader, headers http.Header) error {
-	w.takeHeaders(r)
-	transcoder, found := p.transcoders[r.ContentType()]
+func (p *Proxy) proxyResponse(rw *ResponseWriter, rr *ResponseReader, r *http.Request) error {
+	rw.takeHeaders(rr)
+	transcoder, found := p.transcoders[rr.ContentType()]
 	if !found {
-		return w.ReadFrom(r)
+		return rw.ReadFrom(rr)
 	}
-	w.setChunked()
-	if err := transcoder.Transcode(w, r, headers); err != nil {
+	rw.setChunked()
+	if r.Method == "HEAD" {
+		transcoder.TranscodeHead(rw, rr, r.Header)
+		return nil
+	}
+	if err := transcoder.Transcode(rw, rr, r.Header); err != nil {
 		return fmt.Errorf("transcoding error: %s", err)
 	}
 	return nil

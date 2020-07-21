@@ -28,3 +28,5 @@ func NewMinifier() *Minifier {
 func (t *Minifier) Transcode(w *proxy.ResponseWriter, r *proxy.ResponseReader, headers http.Header) error {
 	return t.m.Minify(r.ContentType(), w, r)
 }
+
+func (t *Minifier) TranscodeHead(w *proxy.ResponseWriter, r *proxy.ResponseReader, headers http.Header) {}

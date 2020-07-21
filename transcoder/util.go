@@ -6,8 +6,13 @@ import (
 )
 
 func SupportsWebP(headers http.Header) bool {
-	for _, v := range strings.Split(headers.Get("Accept"), ",") {
-		if strings.SplitN(v, ";", 2)[0] == "image/webp" {
+	accept := headers.Get("Accept")
+	if accept == "" {
+		return true
+	}
+	for _, v := range strings.Split(accept, ",") {
+		mimeType := strings.SplitN(v, ";", 2)[0]
+		if mimeType == "*/*" || mimeType == "image/*" || mimeType == "image/webp" {
 			return true
 		}
 	}

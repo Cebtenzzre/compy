@@ -41,7 +41,7 @@ func (l *mitmListener) Serve(conn net.Conn, host string) (net.Conn, error) {
 		sconn.Close()
 		return nil, err
 	}
-	tlsconf := &tls.Config{Certificates: []tls.Certificate{*fakeCert}}
+	tlsconf := &tls.Config{Certificates: []tls.Certificate{*fakeCert}, InsecureSkipVerify: true}
 	l.c <- tls.Server(conn, tlsconf)
 	return sconn, nil
 }

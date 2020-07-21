@@ -22,6 +22,8 @@ var (
 	pass  = flag.String("pass", "", "proxy password")
 
 	brotli = flag.Int("brotli", 6, "Brotli compression level (0-11)")
+	imgsz  = flag.Uint("imgsz", 512, "image size")
+	webp   = flag.Int("webp", 10, "webp quality (0-100)")
 	jpeg   = flag.Int("jpeg", 50, "jpeg quality (1-100, 0 to disable)")
 	gif    = flag.Bool("gif", true, "transcode gifs into static images")
 	gzip   = flag.Int("gzip", 6, "gzip compression level (0-9)")
@@ -56,13 +58,14 @@ func main() {
 	}
 
 	if *jpeg != 0 {
-		p.AddTranscoder("image/jpeg", tc.NewJpeg(*jpeg))
+		p.AddTranscoder("image/jpeg", tc.NewJpeg(*imgsz, *jpeg, *webp))
+		p.AddTranscoder("image/webp", tc.NewWebP(*imgsz, *webp))
 	}
 	if *gif {
-		p.AddTranscoder("image/gif", &tc.Gif{})
+		p.AddTranscoder("image/gif", tc.NewGif(*webp))
 	}
 	if *png {
-		p.AddTranscoder("image/png", &tc.Png{})
+		p.AddTranscoder("image/png", tc.NewPng(*imgsz, *webp))
 	}
 
 	var ttc proxy.Transcoder
